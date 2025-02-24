@@ -41,7 +41,6 @@ int main() {
     adc_run(true);
 
     while (1) {
-        gpio_put(PICO_DEFAULT_LED_PIN,1);
         for (int i = 0; i < capture_depth; ++i) {
             printf("%-3d, ", adc_buffer[i]);
             if (i % 10 == 9)
