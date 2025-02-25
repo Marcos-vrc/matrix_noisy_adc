@@ -12,7 +12,6 @@ with the noisy adc is possible to create matrix like animation using the random 
 #include "hardware/adc.h"
 #include "hardware/uart.h"
 #include "hardware/dma.h"
-#include "pico/binary_info.h"
 
 #define ADC_NUM 0
 #define ADC_PIN (26 + ADC_NUM)
@@ -21,10 +20,16 @@ with the noisy adc is possible to create matrix like animation using the random 
 #define capture_depth 1000
 uint8_t adc_buffer[capture_depth];
 
+int dma_channel;
+
+bool update_dma_batch(__unused struct repeating_timer *t){
+    //printf("time \n");
+    dma_channel_transfer_to_buffer_now(dma_channel,adc_buffer,capture_depth);
+    return true;
+}
+
 int main() {
     stdio_init_all();
-    gpio_init(PICO_DEFAULT_LED_PIN);
-    gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
     adc_init();
     adc_gpio_init( ADC_PIN);
     adc_select_input(ADC_NUM);
@@ -40,12 +45,14 @@ int main() {
     dma_channel_configure(dma_channel,&config,adc_buffer,&adc_hw->fifo,capture_depth,true);
     adc_run(true);
 
+    struct repeating_timer timer;
+    add_repeating_timer_ms(5,update_dma_batch,NULL,&timer);
     while (1) {
         for (int i = 0; i < capture_depth; ++i) {
             printf("%-3d, ", adc_buffer[i]);
             if (i % 10 == 9)
                 printf("\n");
         }
-        dma_channel_transfer_to_buffer_now(dma_channel,adc_buffer,capture_depth);
+        
     }
 }
