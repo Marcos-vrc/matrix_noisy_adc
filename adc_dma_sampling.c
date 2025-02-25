@@ -46,7 +46,7 @@ int main() {
     adc_run(true);
 
     struct repeating_timer timer;
-    add_repeating_timer_ms(5,update_dma_batch,NULL,&timer);
+    add_repeating_timer_ms(4,update_dma_batch,NULL,&timer);
     while (1) {
         for (int i = 0; i < capture_depth; ++i) {
             printf("%-3d, ", adc_buffer[i]);
