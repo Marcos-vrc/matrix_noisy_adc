@@ -1,7 +1,7 @@
 /* 
 Marcos vinicius Rodrigues Costa
 based on dma_capture from raspberry pi pico example, but continous instead of a batch,
-utilizing dma_channel_transfer_to_buffer_now and a potentiometer to generate the values.
+utilizing dma_channel_transfer_to_buffer_now inside a isr and a potentiometer to generate the values.
 with the noisy adc is possible to create matrix like animation using the random numbers
 */
 
