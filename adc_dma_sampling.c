@@ -1,7 +1,7 @@
 /* 
 Marcos vinicius Rodrigues Costa
 based on dma_capture from raspberry pi pico example, but continous instead of a batch,
-utilizing dma_channel_transfer_to_buffer_now and a potentiometer to generate the values.
+utilizing dma_channel_transfer_to_buffer_now inside a isr and a potentiometer to generate the values.
 with the noisy adc is possible to create matrix like animation using the random numbers
 */
 
@@ -23,8 +23,16 @@ uint8_t adc_buffer[capture_depth];
 int dma_channel;
 
 bool update_dma_batch(__unused struct repeating_timer *t){
-    //printf("time \n");
     dma_channel_transfer_to_buffer_now(dma_channel,adc_buffer,capture_depth);
+    return true;
+}
+
+bool print_values_periodcally(__unused struct repeating_timer *t){
+    for (int i = 0; i < capture_depth; ++i) {
+        printf("%-3d, ", adc_buffer[i]);
+        if (i % 10 == 9)
+            printf("\n");
+    }
     return true;
 }
 
@@ -45,14 +53,15 @@ int main() {
     dma_channel_configure(dma_channel,&config,adc_buffer,&adc_hw->fifo,capture_depth,true);
     adc_run(true);
 
-    struct repeating_timer timer;
-    add_repeating_timer_ms(4,update_dma_batch,NULL,&timer);
-    while (1) {
+    struct repeating_timer adc_update,print_values;
+    add_repeating_timer_ms(4,update_dma_batch,NULL,&adc_update);
+    add_repeating_timer_ms(1,print_values_periodcally,NULL,&print_values);
+    /*while (1) {
         for (int i = 0; i < capture_depth; ++i) {
             printf("%-3d, ", adc_buffer[i]);
             if (i % 10 == 9)
                 printf("\n");
         }
         
-    }
+    }*/
 }
