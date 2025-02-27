@@ -28,28 +28,21 @@ bool update_dma_batch(__unused struct repeating_timer *t){
     return true;
 }
 
-bool blink_led(__unused struct repeating_timer *t){
-    if (led_on)
-    {
-        gpio_put(PICO_DEFAULT_LED_PIN,true);
-        led_on=false;
-    }
-    else{
-        gpio_put(PICO_DEFAULT_LED_PIN,false);
-        led_on=true;
-    }
-    return true;
+void update_pwm(){
+    pwm_clear_irq(pwm_gpio_to_slice_num(PICO_DEFAULT_LED_PIN));
+    pwm_set_gpio_level(PICO_DEFAULT_LED_PIN, adc_buffer[0]*adc_buffer[0]);
 }
 
 void setup_gpio(){
     gpio_set_function(PICO_DEFAULT_LED_PIN, GPIO_FUNC_PWM);
     uint slice_num = pwm_gpio_to_slice_num(PICO_DEFAULT_LED_PIN);
     pwm_config config = pwm_get_default_config();
-    pwm_config_set_clkdiv(&config, 4.f);
     pwm_init(slice_num, &config, true);
-    //gpio_init(PICO_DEFAULT_LED_PIN);
-    //gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
-    adc_gpio_init( ADC_PIN);
+    pwm_clear_irq(slice_num);
+    pwm_set_irq_enabled(slice_num, true);
+    irq_set_exclusive_handler(PWM_DEFAULT_IRQ_NUM(), update_pwm);
+    irq_set_enabled(PWM_DEFAULT_IRQ_NUM(), true);
+    adc_gpio_init(ADC_PIN);
 }
 
 void setup_adc(){
@@ -80,7 +73,6 @@ int main() {
     while (1) {
         for (int i = 0; i < capture_depth; ++i) {
             printf("%-3d,", adc_buffer[i]);
-            pwm_set_gpio_level(PICO_DEFAULT_LED_PIN, adc_buffer[i]*adc_buffer[i]);
             if (i % 10 == 9)
                 printf("\n");
         }
