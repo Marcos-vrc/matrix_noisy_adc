@@ -23,23 +23,17 @@ int dma_adc0,control_channel;
 bool led_on=true;
 int adc=0;
 
-uint16_t* buffer[]={adc_buffer_0,adc_buffer_1};
-
 void set_adc(){
     if (adc<capture_depth)
     {
         adc_fifo_drain();
         adc_select_input(0);
-        //dma_channel_transfer_to_buffer_now(dma_adc0,adc_buffer_0,capture_depth);
         dma_channel_set_write_addr(dma_adc0,&adc_buffer_0,true);
         adc+=capture_depth;
     }
     else
     {
-        //printf("rodou\n");
         adc_select_input(1);
-        //adc_fifo_drain();
-        //dma_channel_transfer_to_buffer_now(dma_adc0,adc_buffer_1,capture_depth);
         dma_channel_set_write_addr(dma_adc0,&adc_buffer_1,true);
         adc-=capture_depth;
     }
@@ -65,10 +59,10 @@ void setup_gpio(){
     //pwm_set_irq_enabled(led_num, true);
     //irq_set_exclusive_handler(PWM_DEFAULT_IRQ_NUM(), update_pwm);
     //irq_set_enabled(PWM_DEFAULT_IRQ_NUM(), true);
-    adc_gpio_init(ADC_PIN);
 }
 
 void setup_adc(){
+    adc_gpio_init(ADC_PIN);
     adc_init();
     adc_select_input(ADC_NUM);
     adc_fifo_setup(true,true,1,false,false);
@@ -83,36 +77,24 @@ void setup_dma_adc(){
     channel_config_set_read_increment(&config,false);
     channel_config_set_write_increment(&config,true);
     channel_config_set_dreq(&config,DREQ_ADC);
-    dma_channel_configure(dma_adc0,&config,NULL,&adc_hw->fifo,capture_depth,true);
+    dma_channel_configure(dma_adc0,&config,NULL,&adc_hw->fifo,capture_depth,false);
     dma_channel_set_irq0_enabled(dma_adc0, true);
     irq_set_exclusive_handler(DMA_IRQ_0, set_adc);
     irq_set_enabled(DMA_IRQ_0, true);
+    adc_run(true);
 }
 
 int main() {
     stdio_init_all();
-    setup_gpio();
     setup_adc();
     setup_dma_adc();
-    adc_run(true);
     set_adc();
     while (1) {
-        printf("buffer 0 \n");
         for (int i = 0; i < capture_depth; ++i) {
             printf("%-3d,", adc_buffer_0[i]);
-            //pwm_set_gpio_level(PICO_DEFAULT_LED_PIN, adc_buffer_0[i]* adc_buffer_0[i]);
             if (i % 10 == 9)
                 printf("\n");
                 
         }
-        sleep_ms(250);
-        printf("buffer 1 \n");
-        for (int i = 0; i < capture_depth; ++i) {
-            printf("%-3d,", adc_buffer_1[i]);
-            //pwm_set_gpio_level(15, adc_buffer_1[i]* adc_buffer_1[i]);
-            if (i % 10 == 9)
-                printf("\n");
-        }
-        sleep_ms(250);
     }
 }
